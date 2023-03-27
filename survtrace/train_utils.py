@@ -247,6 +247,7 @@ class Trainer:
         '''
         self.model = model
         if metrics is None:
+            # replace with NLLLogistiHazardLoss for the loss function ablation
             self.metrics = [NLLPCHazardLoss(),]
 
         self.train_logs = defaultdict(list)

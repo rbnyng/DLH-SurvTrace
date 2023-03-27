@@ -17,6 +17,7 @@ class SurvTraceMulti(BaseModel):
     def __init__(self, config: STConfig):
         super().__init__(config)
         self.embeddings = BertEmbeddings(config)
+        # i think we can just make a clone of this class and make the encoder a dummy for ablation
         self.encoder = BertEncoder(config)
         self.cls = BertCLSMulti(config)
         self.config = config

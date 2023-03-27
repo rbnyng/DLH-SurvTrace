@@ -595,6 +595,24 @@ class BertEncoder(nn.Module):
             if v is not None
         )
 
+# i think this should work for ablation, but i havent tested it
+class BertEncoderLame(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+
+    def forward(
+        self,
+        hidden_states,
+        attention_mask=None,
+        head_mask=None,
+        output_attentions=False,
+        output_hidden_states=True,
+        ):
+        # the encoder does nothing and simply returns the input hidden_states
+
+        return (hidden_states,)
+
 def prune_linear_layer(layer: nn.Linear, index: torch.LongTensor, dim: int = 0) -> nn.Linear:
     """
     Prune a linear layer to keep only entries in index.
