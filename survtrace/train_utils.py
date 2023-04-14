@@ -10,7 +10,7 @@ from torch.optim import Optimizer
 from torch.nn.utils import clip_grad_norm_
 from torch import optim
 
-from .losses import NLLPCHazardLoss
+from .losses import NLLPCHazardLoss, NLLLogistiHazardLoss
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
@@ -248,7 +248,7 @@ class Trainer:
         self.model = model
         if metrics is None:
             # replace with NLLLogistiHazardLoss for the loss function ablation
-            self.metrics = [NLLPCHazardLoss(),]
+            self.metrics = [NLLPCHazardLoss(),'NLLPCHazardLoss']
 
         self.train_logs = defaultdict(list)
         self.get_target = lambda df: (df['duration'].values, df['event'].values)
@@ -330,7 +330,7 @@ class Trainer:
 
                 phi = self.model(input_ids=batch_x_cat, input_nums=batch_x_num)
 
-                if len(self.metrics) == 1: # only NLLPCHazardLoss is asigned
+                if self.metrics[1] == 'NLLPCHazardLoss': # only NLLPCHazardLoss is asigned
                     batch_loss = self.metrics[0](phi[1], batch_y_train[:,0].long(), batch_y_train[:,1].long(), batch_y_train[:,2].float(), reduction="mean")
 
                 else:
@@ -430,7 +430,21 @@ class Trainer:
                 for risk in range(self.model.config.num_event):
                     phi = self.model(input_ids=batch_x_cat, input_nums=batch_x_num, event=risk)
                     batch_y_train = tensor_y_train["risk_{}".format(risk)][batch_idx*batch_size:(batch_idx+1)*batch_size]
-                    if len(self.metrics) == 1: # only NLLPCHazardLoss is asigned
+                    # if len(self.metrics) == 1: # only NLLPCHazardLoss is asigned
+                    #     if batch_loss is None:
+                    #         batch_loss = self.metrics[0](phi[1], batch_y_train[:,0].long(), batch_y_train[:,1].long(), batch_y_train[:,2].float())
+                    #     else:
+                    #         batch_loss += self.metrics[0](phi[1], batch_y_train[:,0].long(), batch_y_train[:,1].long(), batch_y_train[:,2].float())
+                    if self.metrics[1] == 'NLLLogistiHazardLoss':
+                        # print('NLLLogistiHazardLoss')
+                        # print((phi[1], batch_y_train[:,0].long(), batch_y_train[:,1].long()))
+                        # print(batch_loss)
+                        # print(self.metrics[0](phi[1], batch_y_train[:,0].long(), batch_y_train[:,1].long()))
+                        if batch_loss is None:
+                            batch_loss = self.metrics[0](phi = phi[1], idx_durations = batch_y_train[:,0].long(), events = batch_y_train[:,1].long(), reduction = 'mean')
+                        else:
+                            batch_loss += self.metrics[0](phi = phi[1], idx_durations = batch_y_train[:,0].long(), events = batch_y_train[:,1].long(), reduction = 'mean')
+                    elif self.metrics[1] == 'NLLPCHazardLoss':
                         if batch_loss is None:
                             batch_loss = self.metrics[0](phi[1], batch_y_train[:,0].long(), batch_y_train[:,1].long(), batch_y_train[:,2].float())
                         else:
